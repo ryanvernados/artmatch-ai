@@ -95,7 +95,18 @@ export default function ARPreviewWebAR() {
   }
 
   return (
-    <div style={{ margin: 0, overflow: 'hidden', width: '100vw', height: '100vh', position: 'relative' }}>
+    <div style={{ 
+      margin: 0, 
+      overflow: 'hidden', 
+      width: '100vw', 
+      height: '100vh', 
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      touchAction: 'none',
+      userSelect: 'none',
+      WebkitUserSelect: 'none'
+    }}>
       {/* Header */}
       <div style={{ 
         position: 'absolute', 
@@ -162,10 +173,11 @@ export default function ARPreviewWebAR() {
         embedded
         arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
+        renderer="logarithmicDepthBuffer: true; precision: medium; colorManagement: true;"
+        device-orientation-permission-ui="enabled: false"
       >
-        {/* Camera */}
-        <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
+        {/* Camera - look-controls disabled to prevent jumping on mobile */}
+        <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
 
         {/* Artwork floating in front - always visible without markers */}
         <a-plane
