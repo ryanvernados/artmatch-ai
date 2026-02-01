@@ -21,6 +21,7 @@ import ARPreview from "./pages/ARPreview";
 import AdminDashboard from "./pages/AdminDashboard";
 import AIFeatures from "./pages/AIFeatures";
 import DevSeed from "./pages/DevSeed";
+import DevLogin from "./pages/DevLogin";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       
       {/* Development Routes */}
       <Route path="/dev/seed" component={DevSeed} />
+      <Route path="/dev-login" component={DevLogin} />
       
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
