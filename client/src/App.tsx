@@ -22,6 +22,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AIFeatures from "./pages/AIFeatures";
 import DevSeed from "./pages/DevSeed";
 import DevLogin from "./pages/DevLogin";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 function Router() {
   return (
@@ -30,6 +32,10 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/home" component={Home} />
+      
+      {/* Auth Routes */}
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       
       {/* Public Routes */}
       <Route path="/discover" component={Discover} />

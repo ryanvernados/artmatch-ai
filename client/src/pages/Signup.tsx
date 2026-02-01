@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link, useLocation } from "wouter";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Signup() {
   const [, navigate] = useLocation();
@@ -13,7 +14,16 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const signupMutation = trpc.auth.signup.useMutation({
+    onSuccess: () => {
+      toast.success("Account created successfully! Please log in.");
+      navigate("/login");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,30 +38,7 @@ export default function Signup() {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Signup failed");
-      }
-
-      toast.success("Account created successfully!");
-      navigate("/dashboard");
-      window.location.reload(); // Refresh to update auth state
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Signup failed");
-    } finally {
-      setLoading(false);
-    }
+    signupMutation.mutate({ name, email, password });
   };
 
   return (
@@ -75,7 +62,7 @@ export default function Signup() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                disabled={loading}
+                disabled={signupMutation.isPending}
               />
             </div>
             <div className="space-y-2">
@@ -87,7 +74,7 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loading}
+                disabled={signupMutation.isPending}
               />
             </div>
             <div className="space-y-2">
@@ -100,7 +87,7 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                disabled={loading}
+                disabled={signupMutation.isPending}
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 8 characters
@@ -115,11 +102,11 @@ export default function Signup() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                disabled={loading}
+                disabled={signupMutation.isPending}
               />
             </div>
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? (
+            <Button type="submit" className="w-full" size="lg" disabled={signupMutation.isPending}>
+              {signupMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
