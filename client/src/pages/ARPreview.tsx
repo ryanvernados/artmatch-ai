@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import { useParams, Link } from "wouter";
-import { Loader2, ArrowLeft, Camera, RotateCcw, ZoomIn, ZoomOut, Move, Download, X, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Camera, RotateCcw, ZoomIn, ZoomOut, Move, Download, X, AlertCircle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ARPreview() {
@@ -20,6 +20,7 @@ export default function ARPreview() {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [artworkPosition, setArtworkPosition] = useState({ x: 50, y: 50 });
   const [artworkScale, setArtworkScale] = useState(30);
   const [isDragging, setIsDragging] = useState(false);
@@ -53,17 +54,39 @@ export default function ARPreview() {
     if (!isCameraSupported) {
       setCameraError("Camera API is not supported in this browser. Please try a modern browser like Chrome, Firefox, or Safari.");
       toast.error("Camera not supported");
+      setShowTroubleshooting(true);
       return;
     }
 
     if (!isSecureContext) {
       setCameraError("Camera access requires a secure connection (HTTPS). Please access this page via HTTPS.");
       toast.error("Secure connection required");
+      setShowTroubleshooting(true);
       return;
     }
 
     setCameraLoading(true);
     setCameraError(null);
+    setShowTroubleshooting(false);
+
+    // Check if we can enumerate devices first
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      
+      console.log(`Found ${videoDevices.length} video devices`);
+      
+      if (videoDevices.length === 0) {
+        setCameraError("No camera detected on your device.");
+        setCameraLoading(false);
+        toast.error("No camera found");
+        setShowTroubleshooting(true);
+        return;
+      }
+    } catch (enumError) {
+      console.warn("Could not enumerate devices:", enumError);
+      // Continue anyway, getUserMedia might still work
+    }
 
     try {
       // First, try to get the back camera (environment facing)
@@ -151,21 +174,22 @@ export default function ARPreview() {
       
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          errorMessage = "Camera permission denied. Please allow camera access in your browser settings and try again.";
+          errorMessage = "Camera permission denied.";
         } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          errorMessage = "No camera found. Please connect a camera and try again.";
+          errorMessage = "No camera found.";
         } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-          errorMessage = "Camera is in use by another application. Please close other apps using the camera and try again.";
+          errorMessage = "Camera is in use by another application.";
         } else if (err.name === 'OverconstrainedError') {
-          errorMessage = "Camera doesn't support the required settings. Trying with default settings...";
+          errorMessage = "Camera doesn't support the required settings.";
         } else if (err.name === 'SecurityError') {
-          errorMessage = "Camera access blocked due to security restrictions. Please ensure you're using HTTPS.";
+          errorMessage = "Camera access blocked due to security restrictions.";
         } else if (err.message) {
           errorMessage = err.message;
         }
       }
       
       setCameraError(errorMessage);
+      setShowTroubleshooting(true);
       toast.error("Camera access failed");
     } finally {
       setCameraLoading(false);
@@ -292,6 +316,49 @@ export default function ARPreview() {
 
   const { artwork } = data;
 
+  const TroubleshootingGuide = () => (
+    <Card className="mt-4 bg-blue-50 border-blue-200">
+      <CardContent className="p-4 space-y-3 text-sm">
+        <div className="flex items-start gap-2">
+          <HelpCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-2">Troubleshooting Camera Issues</h4>
+            
+            <div className="space-y-2 text-blue-800">
+              <div>
+                <p className="font-medium">If camera permission was denied:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Click the camera/lock icon in your browser's address bar</li>
+                  <li>Select "Allow" for camera access</li>
+                  <li>Refresh the page and try again</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium">On mobile devices:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Go to Settings → Browser App → Permissions</li>
+                  <li>Enable Camera permission</li>
+                  <li>Return to this page and try again</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium">If no camera is detected:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Ensure your device has a working camera</li>
+                  <li>Close other apps that might be using the camera</li>
+                  <li>Try a different browser (Chrome, Firefox, Safari)</li>
+                  <li>Check if camera works in other apps first</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-black">
       <div className="container py-4 flex items-center justify-between">
@@ -335,9 +402,19 @@ export default function ARPreview() {
               {cameraError && (
                 <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-4 flex items-start gap-3 text-left">
                   <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  <span>{cameraError}</span>
+                  <div>
+                    <p className="font-medium mb-1">{cameraError}</p>
+                    <button 
+                      onClick={() => setShowTroubleshooting(!showTroubleshooting)}
+                      className="text-sm underline hover:no-underline"
+                    >
+                      {showTroubleshooting ? 'Hide' : 'Show'} troubleshooting steps
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {showTroubleshooting && <TroubleshootingGuide />}
 
               {!isCameraSupported && (
                 <div className="bg-yellow-500/20 text-yellow-300 p-4 rounded-lg mb-4 text-sm">
@@ -398,62 +475,71 @@ export default function ARPreview() {
               onTouchEnd={handleTouchEnd}
             >
               <div
-                className="absolute transition-transform duration-75 pointer-events-none"
+                className="absolute pointer-events-none"
                 style={{
                   left: `${artworkPosition.x}%`,
                   top: `${artworkPosition.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  width: `${artworkScale}%`
+                  width: `${artworkScale}%`,
                 }}
               >
-                <div className="relative shadow-2xl">
-                  <img 
-                    src={artwork.primaryImageUrl} 
-                    alt={artwork.title}
-                    className="w-full h-auto rounded-sm"
-                    style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}
-                    draggable={false}
-                  />
-                  {/* Frame effect */}
-                  <div className="absolute inset-0 border-4 border-white/20 rounded-sm pointer-events-none" />
-                </div>
+                <img 
+                  src={artwork.primaryImageUrl} 
+                  alt={artwork.title}
+                  className="w-full h-auto shadow-2xl"
+                  style={{
+                    filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))'
+                  }}
+                />
               </div>
             </div>
 
             {/* Controls */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <Card className="bg-black/60 border-white/10">
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <ZoomOut className="h-4 w-4 text-white" />
-                    <Slider
-                      value={[artworkScale]}
-                      onValueChange={([v]) => setArtworkScale(v)}
-                      min={10}
-                      max={80}
-                      step={1}
-                      className="flex-1"
-                    />
-                    <ZoomIn className="h-4 w-4 text-white" />
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={() => setArtworkPosition({ x: 50, y: 50 })}>
-                      <RotateCcw className="h-4 w-4 mr-2" />Reset
-                    </Button>
-                    <Button className="flex-1" onClick={captureImage}>
-                      <Camera className="h-4 w-4 mr-2" />Capture
-                    </Button>
-                    <Button variant="destructive" onClick={stopCamera}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <p className="text-center text-xs text-gray-400">
-                    <Move className="h-3 w-3 inline mr-1" />Drag to position • Slider to resize
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="flex items-center gap-4 text-white">
+                  <ZoomOut className="h-5 w-5 flex-shrink-0" />
+                  <Slider
+                    value={[artworkScale]}
+                    onValueChange={([value]) => setArtworkScale(value)}
+                    min={10}
+                    max={80}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <ZoomIn className="h-5 w-5 flex-shrink-0" />
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={() => {
+                      setArtworkPosition({ x: 50, y: 50 });
+                      setArtworkScale(30);
+                    }}
+                    className="flex-1 gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Reset
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={captureImage}
+                    className="flex-1 gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Capture
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    onClick={stopCamera}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
