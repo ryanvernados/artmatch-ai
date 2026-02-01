@@ -17,7 +17,7 @@ import Favorites from "./pages/Favorites";
 import Checkout from "./pages/Checkout";
 import Transactions from "./pages/Transactions";
 import TransactionDetail from "./pages/TransactionDetail";
-import ARPreview from "./pages/ARPreview";
+import ARPreviewWebAR from "./pages/ARPreviewWebAR";
 import AdminDashboard from "./pages/AdminDashboard";
 import AIFeatures from "./pages/AIFeatures";
 import DevSeed from "./pages/DevSeed";
@@ -35,7 +35,7 @@ function Router() {
       <Route path="/discover" component={Discover} />
       <Route path="/artwork/:id" component={ArtworkDetail} />
       <Route path="/profile/:id" component={Profile} />
-      <Route path="/ar-preview/:id" component={ARPreview} />
+      <Route path="/ar-preview/:id" component={ARPreviewWebAR} />
       <Route path="/ai-features" component={AIFeatures} />
       
       {/* Protected Routes */}

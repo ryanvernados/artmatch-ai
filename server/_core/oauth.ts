@@ -21,6 +21,8 @@ export function registerOAuthRoutes(app: Express) {
         const devEmail = getQueryParam(req, "email") || "dev@artmatch.local";
         const role = getQueryParam(req, "role") === "admin" ? "admin" : "user";
 
+        console.log("[Dev Login] Starting login for:", devName, devEmail, role);
+
         // Create or update the dev user in database (skip if DB not available)
         try {
           await db.upsertUser({
@@ -31,8 +33,9 @@ export function registerOAuthRoutes(app: Express) {
             role: role as "user" | "admin",
             lastSignedIn: new Date(),
           });
+          console.log("[Dev Login] User created in DB");
         } catch (dbError) {
-          console.warn("[Dev Login] DB not available, skipping user creation:", dbError);
+          console.warn("[Dev Login] DB not available, skipping user creation");
         }
 
         // Create session token
@@ -40,15 +43,37 @@ export function registerOAuthRoutes(app: Express) {
           name: devName,
           expiresInMs: ONE_YEAR_MS,
         });
+        console.log("[Dev Login] Session token created");
 
         const cookieOptions = getSessionCookieOptions(req);
+        console.log("[Dev Login] Cookie options:", JSON.stringify(cookieOptions));
+        
         res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        console.log("[Dev Login] Cookie set with name:", COOKIE_NAME);
 
-        console.log(`[Dev Login] ✅ Created session for ${devName} (${devEmail}) with role: ${role}`);
-        res.redirect(302, "/");
+        console.log(`[Dev Login] ✅ Successfully logged in ${devName} (${devEmail}) with role: ${role}`);
+        
+        // Send HTML response with redirect
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Login Successful</title>
+            <meta http-equiv="refresh" content="1;url=/" />
+          </head>
+          <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1>✅ Login Successful!</h1>
+            <p>Redirecting to home page...</p>
+            <p>If not redirected, <a href="/">click here</a></p>
+          </body>
+          </html>
+        `);
       } catch (error) {
-        console.error("[Dev Login] ❌ Failed", error);
-        res.status(500).json({ error: "Dev login failed: " + String(error) });
+        console.error("[Dev Login] ❌ Failed with error:", error);
+        res.status(500).json({ 
+          error: "Dev login failed", 
+          message: error instanceof Error ? error.message : String(error)
+        });
       }
     });
 
