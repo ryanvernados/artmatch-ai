@@ -171,29 +171,35 @@ export default function ARPreviewWebAR() {
       {/* A-Frame AR Scene - AR.js handles camera automatically */}
       <a-scene
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; videoTexture: true;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium; colorManagement: true;"
         device-orientation-permission-ui="enabled: false"
+        gyroscope="enabled: false"
       >
-        {/* Camera - look-controls disabled to prevent jumping on mobile */}
-        <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+        {/* Camera - completely locked to prevent jumping */}
+        <a-camera 
+          position="0 0 0" 
+          rotation="0 0 0"
+          look-controls="enabled: false; touchEnabled: false; mouseEnabled: false" 
+          wasd-controls="enabled: false"
+        ></a-camera>
 
         {/* Artwork floating in front - always visible without markers */}
         <a-plane
-          position="0 0 -3"
-          width="1.5"
-          height="2.1"
+          position="0 0 -2.5"
+          width="1"
+          height="1.4"
           src={artwork.primaryImageUrl}
           material="transparent: true; shader: flat; side: double"
         ></a-plane>
 
         {/* Frame around artwork */}
         <a-box
-          position="0 0 -3.05"
-          width="1.6"
-          height="2.2"
-          depth="0.1"
+          position="0 0 -2.51"
+          width="1.05"
+          height="1.45"
+          depth="0.08"
           material="color: #8B4513; metalness: 0.5; roughness: 0.7"
         ></a-box>
 
