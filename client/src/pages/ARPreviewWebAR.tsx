@@ -9,13 +9,13 @@ export default function ARPreviewWebAR() {
   const { id } = useParams<{ id: string }>();
   const artworkId = parseInt(id || '0');
   const [arReady, setArReady] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   
   const { data, isLoading } = trpc.artwork.getById.useQuery({ id: artworkId }, { enabled: artworkId > 0 });
 
+  // Load A-Frame
   useEffect(() => {
-    // Load A-Frame script dynamically
     const loadScripts = () => {
-      // Load A-Frame only - no AR.js needed for simple camera view
       const aframeScript = document.createElement('script');
       aframeScript.src = 'https://aframe.io/releases/1.6.0/aframe.min.js';
       aframeScript.async = false;
@@ -28,12 +28,43 @@ export default function ARPreviewWebAR() {
 
     loadScripts();
 
-    // Cleanup
     return () => {
       const scripts = document.querySelectorAll('script[src*="aframe"]');
       scripts.forEach(script => script.remove());
     };
   }, []);
+
+  // Initialize camera
+  useEffect(() => {
+    if (!arReady) return;
+
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' }, 
+          audio: false 
+        });
+        
+        // Wait for A-Frame to be ready
+        const checkVideo = setInterval(() => {
+          const video = document.querySelector('#webcam') as HTMLVideoElement;
+          if (video) {
+            video.srcObject = stream;
+            video.play();
+            setCameraReady(true);
+            clearInterval(checkVideo);
+          }
+        }, 100);
+
+        // Cleanup after 5 seconds if not found
+        setTimeout(() => clearInterval(checkVideo), 5000);
+      } catch (err) {
+        console.error('Camera access error:', err);
+      }
+    };
+
+    initCamera();
+  }, [arReady]);
 
   if (isLoading) {
     return (
@@ -183,28 +214,13 @@ export default function ARPreviewWebAR() {
         <a-assets>
           <video 
             id="webcam" 
-            autoplay 
-            playsinline 
+            autoPlay 
+            playsInline 
+            muted
             style={{ display: 'none' }}
-          ></video>
+          />
         </a-assets>
       </a-scene>
-
-      {/* Initialize webcam */}
-      <script dangerouslySetInnerHTML={{__html: `
-        if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
-          navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-            .then(function(stream) {
-              const video = document.querySelector('#webcam');
-              if (video) {
-                video.srcObject = stream;
-              }
-            })
-            .catch(function(err) {
-              console.error('Camera access error:', err);
-            });
-        }
-      `}} />
     </div>
   );
 }
