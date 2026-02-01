@@ -13,7 +13,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,10 @@ const sidebarItems = [
   { icon: ShoppingCart, label: "Transactions", path: "/transactions" },
   { icon: Search, label: "Discover", path: "/discover" },
   { icon: Sparkles, label: "AI Features", path: "/ai-features" },
+];
+
+const adminItems = [
+  { icon: Shield, label: "Admin Dashboard", path: "/admin" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -86,6 +91,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+            
+            {/* Admin Section */}
+            {user?.role === 'admin' && (
+              <>
+                {sidebarOpen && (
+                  <div className="pt-4 pb-2">
+                    <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</p>
+                  </div>
+                )}
+                {adminItems.map((item) => {
+                  const isActive = location === item.path;
+                  return (
+                    <Link key={item.path} href={item.path}>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3 h-11",
+                          !sidebarOpen && "justify-center px-0"
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {sidebarOpen && <span>{item.label}</span>}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
         </ScrollArea>
 
@@ -157,6 +190,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+              
+              {/* Admin Section - Mobile */}
+              {user?.role === 'admin' && (
+                <>
+                  <div className="pt-4 pb-2">
+                    <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</p>
+                  </div>
+                  {adminItems.map((item) => {
+                    const isActive = location === item.path;
+                    return (
+                      <Link key={item.path} href={item.path}>
+                        <Button
+                          variant={isActive ? "secondary" : "ghost"}
+                          className="w-full justify-start gap-3 h-12"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Button>
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
             </nav>
             <div className="mt-6 pt-6 border-t">
               <div className="flex items-center gap-3 mb-4">

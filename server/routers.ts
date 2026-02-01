@@ -1002,12 +1002,17 @@ export const appRouter = router({
         
         // Create user with email as openId
         const openId = `email_${email}`;
+        
+        // Check if this is the admin email
+        const isAdmin = ENV.adminEmail && email.toLowerCase() === ENV.adminEmail.toLowerCase();
+        
         const user = await db.upsertUser({
           openId,
           name,
           email,
           passwordHash,
-          loginMethod: 'email'
+          loginMethod: 'email',
+          role: isAdmin ? 'admin' : 'user'
         });
         
         return { success: true, message: 'Account created successfully' };
