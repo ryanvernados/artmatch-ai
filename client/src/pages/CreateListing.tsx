@@ -108,19 +108,29 @@ export default function CreateListing() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const base64 = (reader.result as string).split(',')[1];
-        const result = await uploadImage.mutateAsync({
-          base64,
-          filename: file.name,
-          contentType: file.type
-        });
-        setImageUrl(result.url);
-        toast.success("Image uploaded successfully");
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const result = await uploadImage.mutateAsync({
+            base64,
+            filename: file.name,
+            contentType: file.type
+          });
+          setImageUrl(result.url);
+          toast.success("Image uploaded successfully");
+        } catch (error: any) {
+          console.error("Upload error:", error);
+          toast.error(error?.message || "Failed to upload image");
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read file");
+        setUploading(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       toast.error("Failed to upload image");
-    } finally {
       setUploading(false);
     }
   };
