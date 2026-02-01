@@ -12,6 +12,7 @@ export default function ARPreviewWebAR() {
   const [scale, setScale] = useState(1);
   const [positionY, setPositionY] = useState(0);
   const [distance, setDistance] = useState(-2.5);
+  const [showControls, setShowControls] = useState(true);
   
   const { data, isLoading } = trpc.artwork.getById.useQuery({ id: artworkId }, { enabled: artworkId > 0 });
 
@@ -158,8 +159,30 @@ export default function ARPreviewWebAR() {
           padding: '1rem',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
         }}>
+          {/* Toggle Button */}
+          <button
+            onClick={() => setShowControls(!showControls)}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: showControls ? '1px solid #e5e7eb' : 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontWeight: 600,
+              fontSize: '14px',
+              marginBottom: showControls ? '1rem' : 0
+            }}
+          >
+            <span>Adjust Artwork</span>
+            <span style={{ transform: showControls ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+          </button>
+
           {/* Controls */}
-          <div style={{ marginBottom: '1rem' }}>
+          {showControls && <div style={{ marginBottom: '1rem' }}>
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
                 Size: {scale.toFixed(1)}x
@@ -225,14 +248,14 @@ export default function ARPreviewWebAR() {
             >
               Reset Position
             </button>
-          </div>
+          </div>}
 
-          <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
-            <Info style={{ width: '16px', height: '16px', color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
+          {!showControls && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.5rem' }}>
+            <Info style={{ width: '16px', height: '16px', color: '#2563eb', flexShrink: 0 }} />
             <p style={{ margin: 0, color: '#4b5563', fontSize: '12px' }}>
-              Adjust the artwork size and position to fit your space
+              Tap to adjust artwork size and position
             </p>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -253,25 +276,25 @@ export default function ARPreviewWebAR() {
           wasd-controls="enabled: false"
         ></a-camera>
 
-        {/* Frame around artwork - positioned behind */}
-        <a-box
-          position={`0 ${positionY} ${distance}`}
-          scale={`${scale} ${scale} 1`}
-          width="1.1"
-          height="1.5"
-          depth="0.05"
-          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
-        ></a-box>
-
-        {/* Artwork floating in front - always visible without markers */}
+        {/* Artwork - positioned in front */}
         <a-plane
-          position={`0 ${positionY} ${distance + 0.01}`}
+          position={`0 ${positionY} ${distance}`}
           scale={`${scale} ${scale} 1`}
           width="1"
           height="1.4"
           src={artwork.primaryImageUrl}
           material="transparent: true; shader: flat; side: double"
         ></a-plane>
+
+        {/* Frame around artwork - positioned behind */}
+        <a-box
+          position={`0 ${positionY} ${distance - 0.1}`}
+          scale={`${scale} ${scale} 1`}
+          width="1.1"
+          height="1.5"
+          depth="0.02"
+          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
+        ></a-box>
 
         {/* Lighting */}
         <a-light type="ambient" color="#FFF" intensity="0.8"></a-light>
