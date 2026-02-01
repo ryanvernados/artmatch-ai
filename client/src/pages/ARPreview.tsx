@@ -472,7 +472,15 @@ export default function ARPreview() {
                   </>
                 )}
               </Button>
-              Debug info for active camera */}
+              
+              <p className="text-gray-500 text-sm mt-4">
+                Point your camera at a wall and position the artwork
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 relative">
+            {/* Debug info for active camera */}
             {process.env.NODE_ENV === 'development' && (
               <div className="absolute top-4 right-4 bg-green-800 text-white text-xs p-2 rounded z-50">
                 Camera is ACTIVE<br/>
@@ -489,14 +497,6 @@ export default function ARPreview() {
               muted
               className="absolute inset-0 w-full h-full object-cover"
               style={{ backgroundColor: '#000' }}
-          <div className="flex-1 relative">
-            {/* Video Feed */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="absolute inset-0 w-full h-full object-cover"
             />
             
             {/* Artwork Overlay */}
