@@ -188,19 +188,15 @@ export default function ARPreviewWebAR() {
                 onChange={(e) => setPositionY(parseFloat(e.target.value))}
                 style={{ width: '100%' }}
               />
-            </div>
-{`0 ${positionY} ${distance}`}
-          scale={`${scale} ${scale} 1`}
-          width="1.1"
-          height="1.5"
-          depth="0.05"
-          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
-        ></a-box>
-
-        {/* Artwork floating in front - always visible without markers */}
-        <a-plane
-          position={`0 ${positionY} ${distance + 0.01}`}
-          scale={`${scale} ${scale} 1`}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                Distance: {Math.abs(distance).toFixed(1)}m
+              </label>
+              <input 
+                type="range" 
+                min="-5" 
+                max="-1" 
+                step="0.1" 
                 value={distance}
                 onChange={(e) => setDistance(parseFloat(e.target.value))}
                 style={{ width: '100%' }}
@@ -257,7 +253,8 @@ export default function ARPreviewWebAR() {
 
         {/* Frame around artwork - positioned behind */}
         <a-box
-          position="0 0 -2.5"
+          position={`0 ${positionY} ${distance}`}
+          scale={`${scale} ${scale} 1`}
           width="1.1"
           height="1.5"
           depth="0.05"
@@ -266,7 +263,8 @@ export default function ARPreviewWebAR() {
 
         {/* Artwork floating in front - always visible without markers */}
         <a-plane
-          position="0 0 -2.49"
+          position={`0 ${positionY} ${distance + 0.01}`}
+          scale={`${scale} ${scale} 1`}
           width="1"
           height="1.4"
           src={artwork.primaryImageUrl}
