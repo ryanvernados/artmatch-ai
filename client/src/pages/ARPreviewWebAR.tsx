@@ -9,7 +9,9 @@ export default function ARPreviewWebAR() {
   const { id } = useParams<{ id: string }>();
   const artworkId = parseInt(id || '0');
   const [arReady, setArReady] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [positionY, setPositionY] = useState(0);
+  const [distance, setDistance] = useState(-2.5);
   
   const { data, isLoading } = trpc.artwork.getById.useQuery({ id: artworkId }, { enabled: artworkId > 0 });
 
@@ -150,20 +152,88 @@ export default function ARPreviewWebAR() {
         margin: '0 auto'
       }}>
         <div style={{ 
-          background: 'rgba(255,255,255,0.9)', 
+          background: 'rgba(255,255,255,0.95)', 
           backdropFilter: 'blur(8px)', 
           borderRadius: '8px', 
           padding: '1rem',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
-            <Info style={{ width: '20px', height: '20px', color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '14px' }}>
-              <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>AR Preview</p>
-              <p style={{ margin: 0, color: '#4b5563' }}>
-                Move your device around to see how the artwork would look in your space
-              </p>
+          {/* Controls */}
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                Size: {scale.toFixed(1)}x
+              </label>
+              <input 
+                type="range" 
+                min="0.5" 
+                max="3" 
+                step="0.1" 
+                value={scale}
+                onChange={(e) => setScale(parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
             </div>
+
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
+                Height: {positionY.toFixed(1)}m
+              </label>
+              <input 
+                type="range" 
+                min="-1" 
+                max="1" 
+                step="0.1" 
+                value={positionY}
+                onChange={(e) => setPositionY(parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+            </div>
+{`0 ${positionY} ${distance}`}
+          scale={`${scale} ${scale} 1`}
+          width="1.1"
+          height="1.5"
+          depth="0.05"
+          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
+        ></a-box>
+
+        {/* Artwork floating in front - always visible without markers */}
+        <a-plane
+          position={`0 ${positionY} ${distance + 0.01}`}
+          scale={`${scale} ${scale} 1`}
+                value={distance}
+                onChange={(e) => setDistance(parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <button 
+              onClick={() => {
+                setScale(1);
+                setPositionY(0);
+                setDistance(-2.5);
+              }}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Reset Position
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+            <Info style={{ width: '16px', height: '16px', color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
+            <p style={{ margin: 0, color: '#4b5563', fontSize: '12px' }}>
+              Adjust the artwork size and position to fit your space
+            </p>
           </div>
         </div>
       </div>
@@ -185,23 +255,23 @@ export default function ARPreviewWebAR() {
           wasd-controls="enabled: false"
         ></a-camera>
 
+        {/* Frame around artwork - positioned behind */}
+        <a-box
+          position="0 0 -2.5"
+          width="1.1"
+          height="1.5"
+          depth="0.05"
+          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
+        ></a-box>
+
         {/* Artwork floating in front - always visible without markers */}
         <a-plane
-          position="0 0 -2.5"
+          position="0 0 -2.49"
           width="1"
           height="1.4"
           src={artwork.primaryImageUrl}
           material="transparent: true; shader: flat; side: double"
         ></a-plane>
-
-        {/* Frame around artwork */}
-        <a-box
-          position="0 0 -2.51"
-          width="1.05"
-          height="1.45"
-          depth="0.08"
-          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
-        ></a-box>
 
         {/* Lighting */}
         <a-light type="ambient" color="#FFF" intensity="0.8"></a-light>
