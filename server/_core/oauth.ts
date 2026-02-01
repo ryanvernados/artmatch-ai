@@ -21,15 +21,19 @@ export function registerOAuthRoutes(app: Express) {
         const devEmail = getQueryParam(req, "email") || "dev@artmatch.local";
         const role = getQueryParam(req, "role") === "admin" ? "admin" : "user";
 
-        // Create or update the dev user in database
-        await db.upsertUser({
-          openId: devOpenId,
-          name: devName,
-          email: devEmail,
-          loginMethod: "dev",
-          role: role as "user" | "admin",
-          lastSignedIn: new Date(),
-        });
+        // Create or update the dev user in database (skip if DB not available)
+        try {
+          await db.upsertUser({
+            openId: devOpenId,
+            name: devName,
+            email: devEmail,
+            loginMethod: "dev",
+            role: role as "user" | "admin",
+            lastSignedIn: new Date(),
+          });
+        } catch (dbError) {
+          console.warn("[Dev Login] DB not available, skipping user creation:", dbError);
+        }
 
         // Create session token
         const sessionToken = await sdk.createSessionToken(devOpenId, {
@@ -40,11 +44,11 @@ export function registerOAuthRoutes(app: Express) {
         const cookieOptions = getSessionCookieOptions(req);
         res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-        console.log(`[Dev Login] Created session for ${devName} (${devEmail}) with role: ${role}`);
+        console.log(`[Dev Login] ✅ Created session for ${devName} (${devEmail}) with role: ${role}`);
         res.redirect(302, "/");
       } catch (error) {
-        console.error("[Dev Login] Failed", error);
-        res.status(500).json({ error: "Dev login failed" });
+        console.error("[Dev Login] ❌ Failed", error);
+        res.status(500).json({ error: "Dev login failed: " + String(error) });
       }
     });
 
