@@ -21,7 +21,7 @@ export default function Transactions() {
   }, [authLoading, isAuthenticated]);
 
   if (authLoading || isLoading) {
-    return <DashboardLayout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
+    return <AppLayout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></AppLayout>;
   }
 
   const formatPrice = (price: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(typeof price === 'string' ? parseFloat(price) : price);
