@@ -8,6 +8,8 @@ import * as db from "./db";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { seedDatabase, SEED_USERS, SEED_ARTWORKS } from "./seed-api";
+import { ENV } from "./_core/env";
 
 // Admin procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -692,6 +694,21 @@ const adminRouter = router({
         aiConfidenceScore: input.confidenceScore?.toString()
       });
       return { success: true };
+    }),
+
+  // Seed database with test data
+  seedDatabase: publicProcedure
+    .mutation(async () => {
+      if (!ENV.databaseUrl) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not configured' });
+      }
+      try {
+        await seedDatabase(ENV.databaseUrl);
+        return { success: true, message: 'Database seeded successfully' };
+      } catch (error) {
+        console.error('Seed error:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to seed database' });
+      }
     }),
 
   verifySeller: adminProcedure

@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import { useParams, Link } from "wouter";
-import { Loader2, ArrowLeft, Camera, RotateCcw, ZoomIn, ZoomOut, Move, Download, X } from "lucide-react";
+import { Loader2, ArrowLeft, Camera, RotateCcw, ZoomIn, ZoomOut, Move, Download, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ARPreview() {
@@ -16,36 +16,160 @@ export default function ARPreview() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [artworkPosition, setArtworkPosition] = useState({ x: 50, y: 50 });
   const [artworkScale, setArtworkScale] = useState(30);
   const [isDragging, setIsDragging] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraActive(true);
-        setCameraError(null);
-      }
-    } catch (err) {
-      setCameraError("Unable to access camera. Please grant camera permissions.");
-      toast.error("Camera access denied");
-    }
-  };
+  // Check if camera is supported
+  const isCameraSupported = typeof navigator !== 'undefined' && 
+    navigator.mediaDevices && 
+    typeof navigator.mediaDevices.getUserMedia === 'function';
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
+  // Check if we're on HTTPS (required for camera access)
+  const isSecureContext = typeof window !== 'undefined' && 
+    (window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost');
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
+    setCameraLoading(false);
+  }, []);
+
+  const startCamera = async () => {
+    // Pre-flight checks
+    if (!isCameraSupported) {
+      setCameraError("Camera API is not supported in this browser. Please try a modern browser like Chrome, Firefox, or Safari.");
+      toast.error("Camera not supported");
+      return;
+    }
+
+    if (!isSecureContext) {
+      setCameraError("Camera access requires a secure connection (HTTPS). Please access this page via HTTPS.");
+      toast.error("Secure connection required");
+      return;
+    }
+
+    setCameraLoading(true);
+    setCameraError(null);
+
+    try {
+      // First, try to get the back camera (environment facing)
+      let stream: MediaStream;
+      
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 } 
+          },
+          audio: false
+        });
+      } catch (envError) {
+        // If back camera fails, try any camera
+        console.log("Back camera not available, trying any camera...");
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 } 
+          },
+          audio: false
+        });
+      }
+
+      // Store the stream reference for cleanup
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error("Video element not available"));
+            return;
+          }
+          
+          const video = videoRef.current;
+          
+          const handleLoadedMetadata = () => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            resolve();
+          };
+          
+          const handleError = (e: Event) => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            reject(new Error("Video failed to load"));
+          };
+          
+          video.addEventListener('loadedmetadata', handleLoadedMetadata);
+          video.addEventListener('error', handleError);
+          
+          // Timeout after 10 seconds
+          setTimeout(() => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            reject(new Error("Camera initialization timeout"));
+          }, 10000);
+        });
+
+        // Try to play the video
+        try {
+          await videoRef.current.play();
+        } catch (playError) {
+          console.warn("Autoplay failed, user interaction may be required:", playError);
+          // Video might still work with user interaction
+        }
+
+        setCameraActive(true);
+        setCameraError(null);
+        toast.success("Camera started successfully");
+      }
+    } catch (err: unknown) {
+      console.error("Camera error:", err);
+      
+      // Clean up any partial stream
+      stopCamera();
+      
+      // Provide specific error messages
+      let errorMessage = "Unable to access camera.";
+      
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          errorMessage = "Camera permission denied. Please allow camera access in your browser settings and try again.";
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          errorMessage = "No camera found. Please connect a camera and try again.";
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          errorMessage = "Camera is in use by another application. Please close other apps using the camera and try again.";
+        } else if (err.name === 'OverconstrainedError') {
+          errorMessage = "Camera doesn't support the required settings. Trying with default settings...";
+        } else if (err.name === 'SecurityError') {
+          errorMessage = "Camera access blocked due to security restrictions. Please ensure you're using HTTPS.";
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      }
+      
+      setCameraError(errorMessage);
+      toast.error("Camera access failed");
+    } finally {
+      setCameraLoading(false);
+    }
   };
 
   const captureImage = () => {
@@ -54,6 +178,12 @@ export default function ARPreview() {
     const video = videoRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Check if video has valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast.error("Video not ready. Please wait a moment and try again.");
+      return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -78,6 +208,10 @@ export default function ARPreview() {
         
         ctx.drawImage(img, x, y, width, height);
         setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
+        toast.success("Image captured!");
+      };
+      img.onerror = () => {
+        toast.error("Failed to load artwork image for capture");
       };
       img.src = data.artwork.primaryImageUrl;
     }
@@ -93,6 +227,7 @@ export default function ARPreview() {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
   };
 
@@ -104,7 +239,12 @@ export default function ARPreview() {
     setArtworkPosition({ x: Math.max(10, Math.min(90, x)), y: Math.max(10, Math.min(90, y)) });
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+  };
+
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const touch = e.touches[0];
     const x = ((touch.clientX - rect.left) / rect.width) * 100;
@@ -112,16 +252,42 @@ export default function ARPreview() {
     setArtworkPosition({ x: Math.max(10, Math.min(90, x)), y: Math.max(10, Math.min(90, y)) });
   };
 
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Cleanup on unmount
   useEffect(() => {
-    return () => stopCamera();
-  }, []);
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   if (isLoading) {
-    return <div className="min-h-screen flex flex-col"><Navbar /><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
   }
 
   if (!data?.artwork) {
-    return <div className="min-h-screen flex flex-col"><Navbar /><div className="flex-1 flex items-center justify-center"><div className="text-center"><h2 className="text-2xl font-semibold mb-2">Artwork not found</h2><Button asChild><Link href="/discover">Browse Artworks</Link></Button></div></div></div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-2">Artwork not found</h2>
+            <Button asChild>
+              <Link href="/discover">Browse Artworks</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const { artwork } = data;
@@ -129,7 +295,11 @@ export default function ARPreview() {
   return (
     <div className="min-h-screen flex flex-col bg-black">
       <div className="container py-4 flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild className="text-white gap-2"><Link href={`/artwork/${artworkId}`}><ArrowLeft className="h-4 w-4" />Back</Link></Button>
+        <Button variant="ghost" size="sm" asChild className="text-white gap-2">
+          <Link href={`/artwork/${artworkId}`}>
+            <ArrowLeft className="h-4 w-4" />Back
+          </Link>
+        </Button>
         <h1 className="text-white font-semibold">AR Preview</h1>
         <div className="w-20" />
       </div>
@@ -138,8 +308,12 @@ export default function ARPreview() {
       {capturedImage && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col">
           <div className="p-4 flex justify-between items-center">
-            <Button variant="ghost" size="sm" className="text-white" onClick={() => setCapturedImage(null)}><X className="h-5 w-5" /></Button>
-            <Button variant="secondary" onClick={downloadImage}><Download className="h-4 w-4 mr-2" />Save</Button>
+            <Button variant="ghost" size="sm" className="text-white" onClick={() => setCapturedImage(null)}>
+              <X className="h-5 w-5" />
+            </Button>
+            <Button variant="secondary" onClick={downloadImage}>
+              <Download className="h-4 w-4 mr-2" />Save
+            </Button>
           </div>
           <div className="flex-1 flex items-center justify-center p-4">
             <img src={capturedImage} alt="Captured" className="max-w-full max-h-full object-contain rounded-lg" />
@@ -158,13 +332,42 @@ export default function ARPreview() {
               <h2 className="text-white text-xl font-semibold mb-2">{artwork.title}</h2>
               <p className="text-gray-400 mb-6">See how this artwork looks in your space using your camera</p>
               
-              {cameraError ? (
-                <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-4">{cameraError}</div>
-              ) : null}
+              {cameraError && (
+                <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-4 flex items-start gap-3 text-left">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <span>{cameraError}</span>
+                </div>
+              )}
+
+              {!isCameraSupported && (
+                <div className="bg-yellow-500/20 text-yellow-300 p-4 rounded-lg mb-4 text-sm">
+                  Your browser doesn't support camera access. Please try using Chrome, Firefox, or Safari.
+                </div>
+              )}
+
+              {!isSecureContext && (
+                <div className="bg-yellow-500/20 text-yellow-300 p-4 rounded-lg mb-4 text-sm">
+                  Camera access requires a secure connection (HTTPS).
+                </div>
+              )}
               
-              <Button size="lg" onClick={startCamera} className="gap-2">
-                <Camera className="h-5 w-5" />
-                Start Camera
+              <Button 
+                size="lg" 
+                onClick={startCamera} 
+                className="gap-2"
+                disabled={cameraLoading || !isCameraSupported || !isSecureContext}
+              >
+                {cameraLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Starting Camera...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-5 w-5" />
+                    Start Camera
+                  </>
+                )}
               </Button>
               
               <p className="text-gray-500 text-sm mt-4">
@@ -185,15 +388,17 @@ export default function ARPreview() {
             
             {/* Artwork Overlay */}
             <div 
-              className="absolute inset-0 cursor-move"
+              className="absolute inset-0 cursor-move touch-none"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={() => setIsDragging(false)}
               onMouseLeave={() => setIsDragging(false)}
+              onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <div
-                className="absolute transition-transform duration-75"
+                className="absolute transition-transform duration-75 pointer-events-none"
                 style={{
                   left: `${artworkPosition.x}%`,
                   top: `${artworkPosition.y}%`,
