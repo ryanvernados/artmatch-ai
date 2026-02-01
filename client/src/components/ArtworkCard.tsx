@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Eye, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, Eye, ShieldCheck, Sparkles, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Artwork } from "../../../drizzle/schema";
 
@@ -11,13 +11,15 @@ interface ArtworkCardProps {
   onFavorite?: (id: number) => void;
   isFavorited?: boolean;
   showActions?: boolean;
+  showEditButton?: boolean;
 }
 
 export default function ArtworkCard({ 
   artwork, 
   onFavorite, 
   isFavorited = false,
-  showActions = true 
+  showActions = true,
+  showEditButton = false
 }: ArtworkCardProps) {
   const formatPrice = (price: string | number) => {
     const num = typeof price === 'string' ? parseFloat(price) : price;
@@ -79,13 +81,21 @@ export default function ArtworkCard({
         )}
 
         {/* Quick view on hover */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
           <Link href={`/artwork/${artwork.id}`}>
             <Button variant="secondary" className="gap-2">
               <Eye className="h-4 w-4" />
-              View Details
+              View
             </Button>
           </Link>
+          {showEditButton && (
+            <Link href={`/edit-listing/${artwork.id}`}>
+              <Button variant="secondary" className="gap-2">
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
