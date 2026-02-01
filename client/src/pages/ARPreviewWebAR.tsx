@@ -188,6 +188,8 @@ export default function ARPreviewWebAR() {
                 onChange={(e) => setPositionY(parseFloat(e.target.value))}
                 style={{ width: '100%' }}
               />
+            </div>
+
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
                 Distance: {Math.abs(distance).toFixed(1)}m
