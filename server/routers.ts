@@ -980,6 +980,84 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
+    signup: publicProcedure
+      .input(z.object({
+        name: z.string().min(2, 'Name must be at least 2 characters'),
+        email: z.string().email('Invalid email address'),
+        password: z.string().min(8, 'Password must be at least 8 characters')
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { name, email, password } = input;
+        
+        // Check if user already exists
+        const existingUser = await db.getUserByEmail(email);
+        if (existingUser) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Email already registered' });
+        }
+        
+        // Hash password
+        const bcrypt = await import('bcryptjs');
+        const passwordHash = await bcrypt.hash(password, 10);
+        
+        // Create user with email as openId
+        const openId = `email_${email}`;
+        const user = await db.upsertUser({
+          openId,
+          name,
+          email,
+          passwordHash,
+          loginMethod: 'email'
+        });
+        
+        return { success: true, message: 'Account created successfully' };
+      }),
+    
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email('Invalid email address'),
+        password: z.string().min(1, 'Password is required')
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { email, password } = input;
+        
+        // Find user by email
+        const user = await db.getUserByEmail(email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
+        }
+        
+        // Verify password
+        const bcrypt = await import('bcryptjs');
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
+        }
+        
+        // Create session token
+        const jwt = await import('jsonwebtoken');
+        const token = jwt.sign(
+          { userId: user.id, email: user.email },
+          ENV.JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+        
+        // Set session cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+        
+        return { 
+          success: true, 
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatarUrl: user.avatarUrl,
+            role: user.role
+          }
+        };
+      }),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
