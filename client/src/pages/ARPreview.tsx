@@ -119,67 +119,31 @@ export default function ARPreview() {
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // Wait for video to be ready - set up listeners BEFORE setting srcObject
-        const videoReadyPromise = new Promise<void>((resolve, reject) => {
-          const handleLoadedMetadata = () => {
-            console.log("Video metadata loaded");
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('error', handleError);
-            resolve();
-          };
-          
-          const handleError = (e: Event) => {
-            console.error("Video error event:", e);
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('error', handleError);
-            reject(new Error("Video failed to load"));
-          };
-          
-          video.addEventListener('loadedmetadata', handleLoadedMetadata);
-          video.addEventListener('error', handleError);
-          
-          // Check if video is already ready (handles race condition)
-          if (video.readyState >= 1) {
-            console.log("Video already ready");
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('error', handleError);
-            resolve();
-            return;
-          }
-          
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            video.removeEventListener('error', handleError);
-            reject(new Error("Camera initialization timeout"));
-          }, 10000);
-        });
-
-        // Now set the stream
+        // Set the stream immediately
         video.srcObject = stream;
-        console.log("Stream assigned to video element");
+        console.log("Stream assigned to video element, current readyState:", video.readyState);
         
-        // Wait for video to be ready
-        await videoReadyPromise;
-        console.log("Video ready promise resolved");
-
-        // Try to play the video
+        // Try to play immediately
         try {
-          await video.play();
-          console.log("Video playing successfully");
-          console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
+          const playPromise = video.play();
+          console.log("Play initiated");
+          
+          if (playPromise !== undefined) {
+            await playPromise;
+            console.log("Video playing successfully");
+          }
         } catch (playError) {
-          console.error("Autoplay failed:", playError);
-          // Try to force play anyway
+          console.error("Play failed:", playError);
         }
-
-        console.log("Setting camera active to true");
+        
+        // Activate camera immediately - don't wait for metadata
+        console.log("Activating camera view NOW");
         setCameraActive(true);
         setCameraError(null);
         setCameraLoading(false);
-        toast.success("Camera started successfully");
+        toast.success("Camera started");
         
-        console.log("Camera startup complete, cameraActive should be true now");
+        console.log(`Video state - readyState: ${video.readyState}, paused: ${video.paused}, dimensions: ${video.videoWidth}x${video.videoHeight}`);
       }
     } catch (err: unknown) {
       console.error("Camera error:", err);
