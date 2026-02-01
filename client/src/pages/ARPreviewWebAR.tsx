@@ -13,7 +13,7 @@ export default function ARPreviewWebAR() {
   
   const { data, isLoading } = trpc.artwork.getById.useQuery({ id: artworkId }, { enabled: artworkId > 0 });
 
-  // Load A-Frame
+  // Load A-Frame and AR.js
   useEffect(() => {
     const loadScripts = () => {
       const aframeScript = document.createElement('script');
@@ -22,49 +22,35 @@ export default function ARPreviewWebAR() {
       document.head.appendChild(aframeScript);
 
       aframeScript.onload = () => {
-        setArReady(true);
+        const arjsScript = document.createElement('script');
+        arjsScript.src = 'https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js';
+        arjsScript.async = false;
+        document.head.appendChild(arjsScript);
+        
+        arjsScript.onload = () => {
+          setArReady(true);
+        };
       };
     };
 
     loadScripts();
 
     return () => {
-      const scripts = document.querySelectorAll('script[src*="aframe"]');
+      const scripts = document.querySelectorAll('script[src*="aframe"], script[src*="AR.js"]');
       scripts.forEach(script => script.remove());
     };
   }, []);
 
-  // Initialize camera
+  // Camera cleanup
   useEffect(() => {
-    if (!arReady) return;
-
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' }, 
-          audio: false 
-        });
-        
-        // Wait for A-Frame to be ready
-        const checkVideo = setInterval(() => {
-          const video = document.querySelector('#webcam') as HTMLVideoElement;
-          if (video) {
-            video.srcObject = stream;
-            video.play();
-            setCameraReady(true);
-            clearInterval(checkVideo);
-          }
-        }, 100);
-
-        // Cleanup after 5 seconds if not found
-        setTimeout(() => clearInterval(checkVideo), 5000);
-      } catch (err) {
-        console.error('Camera access error:', err);
+    return () => {
+      const video = document.querySelector('video') as HTMLVideoElement;
+      if (video?.srcObject) {
+        const stream = video.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
       }
     };
-
-    initCamera();
-  }, [arReady]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -109,7 +95,7 @@ export default function ARPreviewWebAR() {
   }
 
   return (
-    <div style={{ margin: 0, overflow: 'hidden', width: '100vw', height: '100vh' }}>
+    <div style={{ margin: 0, overflow: 'hidden', width: '100vw', height: '100vh', position: 'relative' }}>
       {/* Header */}
       <div style={{ 
         position: 'absolute', 
@@ -171,26 +157,19 @@ export default function ARPreviewWebAR() {
         </div>
       </div>
 
-      {/* A-Frame Scene with Camera Background */}
+      {/* A-Frame AR Scene - AR.js handles camera automatically */}
       <a-scene
         embedded
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
-        device-orientation-permission-ui="enabled: false"
       >
-        {/* Camera with webcam background */}
-        <a-camera position="0 1.6 0" look-controls="enabled: true">
-          {/* Webcam video as background */}
-          <a-entity
-            geometry="primitive: plane; width: 2; height: 2"
-            material="shader: flat; src: #webcam; opacity: 0.99"
-            position="0 0 -1"
-          ></a-entity>
-        </a-camera>
+        {/* Camera */}
+        <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
 
-        {/* Artwork positioned in front of camera */}
+        {/* Artwork floating in front - always visible without markers */}
         <a-plane
-          position="0 1.6 -3"
+          position="0 0 -3"
           width="1.5"
           height="2.1"
           src={artwork.primaryImageUrl}
@@ -199,27 +178,16 @@ export default function ARPreviewWebAR() {
 
         {/* Frame around artwork */}
         <a-box
-          position="0 1.6 -3.05"
+          position="0 0 -3.05"
           width="1.6"
           height="2.2"
           depth="0.1"
           material="color: #8B4513; metalness: 0.5; roughness: 0.7"
         ></a-box>
 
-        {/* Ambient lighting */}
+        {/* Lighting */}
         <a-light type="ambient" color="#FFF" intensity="0.8"></a-light>
         <a-light type="directional" color="#FFF" intensity="0.5" position="1 2 1"></a-light>
-
-        {/* Hidden video element for webcam */}
-        <a-assets>
-          <video 
-            id="webcam" 
-            autoPlay 
-            playsInline 
-            muted
-            style={{ display: 'none' }}
-          />
-        </a-assets>
       </a-scene>
     </div>
   );
