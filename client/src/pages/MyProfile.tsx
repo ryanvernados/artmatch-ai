@@ -14,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Link, useLocation } from "wouter";
 import { Loader2, Save, User } from "lucide-react";
 import { toast } from "sonner";
@@ -83,9 +82,7 @@ export default function MyProfile() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container max-w-2xl">
           <div className="mb-8">
@@ -230,8 +227,6 @@ export default function MyProfile() {
           </form>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

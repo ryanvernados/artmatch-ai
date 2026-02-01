@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import ArtworkCard from "@/components/ArtworkCard";
 import { Link } from "wouter";
 import { Loader2, Heart } from "lucide-react";
@@ -26,12 +25,11 @@ export default function Favorites() {
   }, [authLoading, isAuthenticated]);
 
   if (authLoading || isLoading) {
-    return <div className="min-h-screen flex flex-col"><Navbar /><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
+    return <DashboardLayout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container">
           <div className="mb-8"><h1 className="text-3xl font-serif font-bold">My Favorites</h1><p className="text-muted-foreground mt-1">Artworks you've saved</p></div>
@@ -51,7 +49,6 @@ export default function Favorites() {
           )}
         </div>
       </main>
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

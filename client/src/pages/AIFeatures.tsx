@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import ArtworkCard from "@/components/ArtworkCard";
 import { Link } from "wouter";
 import { Loader2, Brain, Sparkles, Heart, Palette, BookOpen, TrendingUp, Smile, Frown, Sun, Moon, Compass, Flame } from "lucide-react";
@@ -34,8 +33,7 @@ export default function AIFeatures() {
   const { data: artworks } = trpc.artwork.list.useQuery({ limit: 6 });
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container">
           {/* Hero */}
@@ -237,7 +235,6 @@ export default function AIFeatures() {
           </Tabs>
         </div>
       </main>
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

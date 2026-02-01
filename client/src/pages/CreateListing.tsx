@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { 
   Loader2, 
@@ -182,9 +181,7 @@ export default function CreateListing() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container max-w-4xl">
           <div className="mb-8">
@@ -458,8 +455,6 @@ export default function CreateListing() {
           </form>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

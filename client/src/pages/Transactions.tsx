@@ -4,8 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "wouter";
 import { Loader2, Receipt, ArrowRight } from "lucide-react";
 import { getLoginUrl } from "@/const";
@@ -22,7 +21,7 @@ export default function Transactions() {
   }, [authLoading, isAuthenticated]);
 
   if (authLoading || isLoading) {
-    return <div className="min-h-screen flex flex-col"><Navbar /><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
+    return <DashboardLayout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>;
   }
 
   const formatPrice = (price: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(typeof price === 'string' ? parseFloat(price) : price);
@@ -38,8 +37,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container">
           <div className="mb-8"><h1 className="text-3xl font-serif font-bold">My Transactions</h1><p className="text-muted-foreground mt-1">Track your purchases and sales</p></div>
@@ -80,7 +78,6 @@ export default function Transactions() {
           )}
         </div>
       </main>
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import ArtworkCard from "@/components/ArtworkCard";
 import { 
   Search, 
@@ -105,9 +104,7 @@ export default function Discover() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
+    <DashboardLayout>
       <main className="flex-1">
         {/* Header */}
         <section className="bg-muted/30 border-b">
@@ -293,8 +290,6 @@ export default function Discover() {
           </div>
         </section>
       </main>
-
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }

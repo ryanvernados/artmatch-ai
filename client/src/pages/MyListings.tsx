@@ -4,8 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "wouter";
 import { Loader2, Plus, Edit, Eye, Palette } from "lucide-react";
 import { getLoginUrl } from "@/const";
@@ -34,8 +33,7 @@ export default function MyListings() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <DashboardLayout>
       <main className="flex-1 py-8">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
@@ -84,7 +82,6 @@ export default function MyListings() {
           )}
         </div>
       </main>
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 }
