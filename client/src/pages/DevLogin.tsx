@@ -4,40 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLocation } from "wouter";
 
 export default function DevLogin() {
   const [name, setName] = useState("Test User");
   const [email, setEmail] = useState("test@artmatch.local");
   const [role, setRole] = useState("user");
-  const [loading, setLoading] = useState(false);
-  const [, setLocation] = useLocation();
 
-  const handleLogin = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/dev-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, role }),
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        // Redirect to dashboard after successful login
-        setLocation("/");
-        window.location.reload();
-      } else {
-        alert("Login failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Login failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleLogin = () => {
+    // Redirect to the dev-login API endpoint with query parameters
+    const params = new URLSearchParams({
+      name,
+      email,
+      role,
+    });
+    window.location.href = `/api/dev-login?${params.toString()}`;
   };
 
   return (
@@ -84,9 +64,9 @@ export default function DevLogin() {
           <Button
             className="w-full"
             onClick={handleLogin}
-            disabled={loading || !name || !email}
+            disabled={!name || !email}
           >
-            {loading ? "Logging in..." : "Login"}
+            Login
           </Button>
           <p className="text-xs text-center text-gray-500">
             This login bypasses OAuth for development/testing only.

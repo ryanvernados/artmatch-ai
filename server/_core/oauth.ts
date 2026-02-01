@@ -11,8 +11,9 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
-  // Development-only login route for testing without OAuth server
-  if (!ENV.isProduction) {
+  // Development login route for testing (enabled in all environments for now)
+  // TODO: Remove or restrict this in production
+  {
     app.get("/api/dev-login", async (req: Request, res: Response) => {
       try {
         const devOpenId = "dev-user-" + Date.now();
