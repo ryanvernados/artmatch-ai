@@ -13,25 +13,16 @@ export default function ARPreviewWebAR() {
   const { data, isLoading } = trpc.artwork.getById.useQuery({ id: artworkId }, { enabled: artworkId > 0 });
 
   useEffect(() => {
-    // Load A-Frame and AR.js scripts dynamically
+    // Load A-Frame script dynamically
     const loadScripts = () => {
-      // Load A-Frame first (version 1.6.0 required for AR.js 3.4.7)
+      // Load A-Frame only - no AR.js needed for simple camera view
       const aframeScript = document.createElement('script');
       aframeScript.src = 'https://aframe.io/releases/1.6.0/aframe.min.js';
       aframeScript.async = false;
       document.head.appendChild(aframeScript);
 
-      // Load AR.js marker tracking after A-Frame
       aframeScript.onload = () => {
-        const arjsScript = document.createElement('script');
-        // Using marker-based version which is more stable and doesn't require NFT preprocessing
-        arjsScript.src = 'https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js';
-        arjsScript.async = false;
-        document.head.appendChild(arjsScript);
-        
-        arjsScript.onload = () => {
-          setArReady(true);
-        };
+        setArReady(true);
       };
     };
 
@@ -39,7 +30,7 @@ export default function ARPreviewWebAR() {
 
     // Cleanup
     return () => {
-      const scripts = document.querySelectorAll('script[src*="aframe"], script[src*="AR.js"]');
+      const scripts = document.querySelectorAll('script[src*="aframe"]');
       scripts.forEach(script => script.remove());
     };
   }, []);
@@ -140,50 +131,80 @@ export default function ARPreviewWebAR() {
           <div style={{ display: 'flex', alignItems: 'start', gap: '0.5rem' }}>
             <Info style={{ width: '20px', height: '20px', color: '#2563eb', flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '14px' }}>
-              <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>How to use:</p>
-              <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', margin: 0 }}>
-                <li>Point camera at a flat surface (wall, table)</li>
-                <li>The artwork will appear in AR</li>
-                <li>Move your phone to view from different angles</li>
-                <li>Scan the <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener" style={{ color: '#2563eb', textDecoration: 'underline' }}>HIRO marker</a> for better tracking</li>
-              </ul>
+              <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>AR Preview</p>
+              <p style={{ margin: 0, color: '#4b5563' }}>
+                Move your device around to see how the artwork would look in your space
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* A-Frame AR Scene */}
+      {/* A-Frame Scene with Camera Background */}
       <a-scene
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
+        device-orientation-permission-ui="enabled: false"
       >
-        {/* HIRO Marker - default AR.js marker */}
-        <a-marker preset="hiro">
-          {/* Artwork as a plane */}
-          <a-plane
-            position="0 0.5 0"
-            rotation="-90 0 0"
-            width="2"
-            height="2.8"
-            src={artwork.primaryImageUrl}
-            material="transparent: true; shader: flat"
-          ></a-plane>
-          {/* Frame around artwork */}
-          <a-box
-            position="0 0.5 0"
-            rotation="-90 0 0"
-            width="2.1"
-            height="2.9"
-            depth="0.05"
-            material="color: #8B4513; metalness: 0.5"
-          ></a-box>
-        </a-marker>
+        {/* Camera with webcam background */}
+        <a-camera position="0 1.6 0" look-controls="enabled: true">
+          {/* Webcam video as background */}
+          <a-entity
+            geometry="primitive: plane; width: 2; height: 2"
+            material="shader: flat; src: #webcam; opacity: 0.99"
+            position="0 0 -1"
+          ></a-entity>
+        </a-camera>
 
-        {/* Camera */}
-        <a-entity camera></a-entity>
+        {/* Artwork positioned in front of camera */}
+        <a-plane
+          position="0 1.6 -3"
+          width="1.5"
+          height="2.1"
+          src={artwork.primaryImageUrl}
+          material="transparent: true; shader: flat; side: double"
+        ></a-plane>
+
+        {/* Frame around artwork */}
+        <a-box
+          position="0 1.6 -3.05"
+          width="1.6"
+          height="2.2"
+          depth="0.1"
+          material="color: #8B4513; metalness: 0.5; roughness: 0.7"
+        ></a-box>
+
+        {/* Ambient lighting */}
+        <a-light type="ambient" color="#FFF" intensity="0.8"></a-light>
+        <a-light type="directional" color="#FFF" intensity="0.5" position="1 2 1"></a-light>
+
+        {/* Hidden video element for webcam */}
+        <a-assets>
+          <video 
+            id="webcam" 
+            autoplay 
+            playsinline 
+            style={{ display: 'none' }}
+          ></video>
+        </a-assets>
       </a-scene>
+
+      {/* Initialize webcam */}
+      <script dangerouslySetInnerHTML={{__html: `
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+            .then(function(stream) {
+              const video = document.querySelector('#webcam');
+              if (video) {
+                video.srcObject = stream;
+              }
+            })
+            .catch(function(err) {
+              console.error('Camera access error:', err);
+            });
+        }
+      `}} />
     </div>
   );
 }
