@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import { useLocation } from "wouter";
 import { 
   Loader2, 
@@ -171,17 +171,16 @@ export default function CreateListing() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
+      <AppLayout>
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1 py-8">
         <div className="container max-w-4xl">
           <div className="mb-8">
@@ -455,6 +454,6 @@ export default function CreateListing() {
           </form>
         </div>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

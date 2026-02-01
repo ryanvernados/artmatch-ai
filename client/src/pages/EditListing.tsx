@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import { useParams, useLocation, Link } from "wouter";
 import { Loader2, Save, ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -90,7 +90,7 @@ export default function EditListing() {
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1 py-8">
         <div className="container max-w-2xl">
           <Button variant="ghost" size="sm" asChild className="mb-4 gap-2"><Link href="/my-listings"><ArrowLeft className="h-4 w-4" />Back to My Listings</Link></Button>
@@ -123,6 +123,6 @@ export default function EditListing() {
           </form>
         </div>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import ArtworkCard from "@/components/ArtworkCard";
 import { 
   Search, 
@@ -104,7 +104,7 @@ export default function Discover() {
   };
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1">
         {/* Header */}
         <section className="bg-muted/30 border-b">
@@ -290,6 +290,6 @@ export default function Discover() {
           </div>
         </section>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

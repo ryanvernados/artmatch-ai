@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import { Link, useLocation } from "wouter";
 import { Loader2, Save, User } from "lucide-react";
 import { toast } from "sonner";
@@ -82,7 +82,7 @@ export default function MyProfile() {
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1 py-8">
         <div className="container max-w-2xl">
           <div className="mb-8">
@@ -227,6 +227,6 @@ export default function MyProfile() {
           </form>
         </div>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

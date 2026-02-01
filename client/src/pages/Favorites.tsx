@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import ArtworkCard from "@/components/ArtworkCard";
 import { Link } from "wouter";
 import { Loader2, Heart } from "lucide-react";
@@ -29,7 +29,7 @@ export default function Favorites() {
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1 py-8">
         <div className="container">
           <div className="mb-8"><h1 className="text-3xl font-serif font-bold">My Favorites</h1><p className="text-muted-foreground mt-1">Artworks you've saved</p></div>
@@ -49,6 +49,6 @@ export default function Favorites() {
           )}
         </div>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

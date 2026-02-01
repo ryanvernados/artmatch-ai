@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import DashboardLayout from "@/components/DashboardLayout";
+import AppLayout from "@/components/AppLayout";
 import { Link } from "wouter";
 import { Loader2, Receipt, ArrowRight } from "lucide-react";
 import { getLoginUrl } from "@/const";
@@ -37,7 +37,7 @@ export default function Transactions() {
   };
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <main className="flex-1 py-8">
         <div className="container">
           <div className="mb-8"><h1 className="text-3xl font-serif font-bold">My Transactions</h1><p className="text-muted-foreground mt-1">Track your purchases and sales</p></div>
@@ -78,6 +78,6 @@ export default function Transactions() {
           )}
         </div>
       </main>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

@@ -59,7 +59,7 @@ export default function Dashboard() {
     orderBy: 'newest'
   });
 
-  const { data: myListings } = trpc.profile.myListings.useQuery(undefined, {
+  const { data: myListings } = trpc.artwork.getMyListings.useQuery(undefined, {
     enabled: isAuthenticated
   });
 
@@ -67,7 +67,7 @@ export default function Dashboard() {
     enabled: isAuthenticated
   });
 
-  const { data: transactions } = trpc.transaction.myTransactions.useQuery(
+  const { data: transactions } = trpc.transaction.getMyTransactions.useQuery(
     { role: 'buyer' },
     { enabled: isAuthenticated }
   );
