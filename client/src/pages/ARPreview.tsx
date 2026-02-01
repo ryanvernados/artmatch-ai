@@ -117,24 +117,19 @@ export default function ARPreview() {
       streamRef.current = stream;
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
         
-        // Wait for video to be ready
-        await new Promise<void>((resolve, reject) => {
-          if (!videoRef.current) {
-            reject(new Error("Video element not available"));
-            return;
-          }
-          
-          const video = videoRef.current;
-          
+        // Wait for video to be ready - set up listeners BEFORE setting srcObject
+        const videoReadyPromise = new Promise<void>((resolve, reject) => {
           const handleLoadedMetadata = () => {
+            console.log("Video metadata loaded");
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
             video.removeEventListener('error', handleError);
             resolve();
           };
           
           const handleError = (e: Event) => {
+            console.error("Video error event:", e);
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
             video.removeEventListener('error', handleError);
             reject(new Error("Video failed to load"));
@@ -142,6 +137,15 @@ export default function ARPreview() {
           
           video.addEventListener('loadedmetadata', handleLoadedMetadata);
           video.addEventListener('error', handleError);
+          
+          // Check if video is already ready (handles race condition)
+          if (video.readyState >= 1) {
+            console.log("Video already ready");
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('error', handleError);
+            resolve();
+            return;
+          }
           
           // Timeout after 10 seconds
           setTimeout(() => {
@@ -151,9 +155,16 @@ export default function ARPreview() {
           }, 10000);
         });
 
+        // Now set the stream
+        video.srcObject = stream;
+        
+        // Wait for video to be ready
+        await videoReadyPromise;
+
         // Try to play the video
         try {
-          await videoRef.current.play();
+          await video.play();
+          console.log("Video playing successfully");
         } catch (playError) {
           console.warn("Autoplay failed, user interaction may be required:", playError);
           // Video might still work with user interaction
